@@ -1,55 +1,70 @@
-# 🔎 ENV File Exposure Checker
+# 👻 GhostVector
 
-A lightweight Python security-testing tool that checks whether a web application's **`.env` file is publicly accessible**.
+### Hunt the hidden. Map the vector.
 
-The tool reads a list of URLs, automatically targets `/.env`, sends an HTTP request, checks the returned status code, and reports potentially exposed endpoints.
+A lightweight Python tool for detecting potentially exposed `.env` files on web applications.
 
-> ⚠️ **For authorized security testing only.** Use this tool only against websites and systems you own or have explicit permission to test.
+GhostVector takes a list of URLs, automatically checks their `/.env` endpoint, analyzes the HTTP response, and highlights targets that return `200 OK`.
+
+> ⚠️ **For authorized security testing only.**
 
 ---
 
 ## ✨ Features
 
-* 📄 Read multiple targets from a file
-* 🔍 Automatically checks `/.env`
-* 🌐 Supports HTTP/HTTPS URLs
-* ⚡ Uses Python `requests` for HTTP requests
-* 📊 Displays the HTTP status code
-* 🟢 Highlights `200 OK` responses
-* 🟡 Detects request timeouts
-* 🔴 Reports other HTTP responses
-* 🛡️ Handles missing and inaccessible input files
-* 💻 Simple command-line interface
+- 📄 Check multiple URLs from a file
+- 🔗 Automatically append `/.env`
+- 🌐 Supports HTTP/HTTPS targets
+- ⚡ Fast HTTP requests using Python `requests`
+- 📊 HTTP status code detection
+- 🟢 Highlights `200 OK` responses
+- 🟡 Detects request timeouts
+- 🔴 Displays other HTTP status codes
+- 🛡️ Handles file-related errors
+- 💻 Simple CLI interface
 
 ---
 
-## 📦 Requirements
+## 🔎 How It Works
 
-Before using the tool, make sure you have:
+GhostVector keeps the initial check simple:
 
-* **Python 3.x**
-* **`requests`**
-
-Check your Python installation:
-
-```bash
-python --version
+```text
+                 URL List
+                    │
+                    ▼
+               Read URL
+                    │
+                    ▼
+              Append /.env
+                    │
+                    ▼
+            Send HTTP Request
+                    │
+                    ▼
+             Check Status Code
+                    │
+          ┌─────────┼─────────┐
+          ▼         ▼         ▼
+         200      Timeout    Other
+          │         │         │
+          ▼         ▼         ▼
+      Potential   Request    Not 200
+      Exposure    Timeout
 ```
 
-### Install the dependency
+### Example
 
-The required Python packages are listed in `requirements.txt`.
+Input:
 
-Install them with:
-
-```bash
-pip install -r requirements.txt
+```text
+https://example.com
 ```
 
-Or install `requests` directly:
+GhostVector checks:
 
-```bash
-pip install requests
+```text
+https://example.com/.env
 ```
 
 ---
@@ -59,13 +74,13 @@ pip install requests
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/utdude/testENV.git
+git clone https://github.com/utkarshrai369/GhostVector.git
 ```
 
-### 2. Enter the project directory
+### 2. Enter the directory
 
 ```bash
-cd testENV
+cd GhostVector
 ```
 
 ### 3. Install dependencies
@@ -74,27 +89,18 @@ cd testENV
 pip install -r requirements.txt
 ```
 
-The tool is now ready to use.
+### Requirements
+
+- 🐍 Python 3.x
+- 📦 `requests`
 
 ---
 
 ## 🎯 Usage
 
-The tool requires a file containing the URLs you want to test.
+GhostVector accepts a file containing URLs using the `-l` / `--list` option.
 
-Use the `-l` or `--list` option:
-
-```bash
-python script.py -l urls.txt
-```
-
-Or:
-
-```bash
-python script.py --list urls.txt
-```
-
-### URL List Format
+### Create your URL list
 
 Create a file such as `urls.txt`:
 
@@ -104,39 +110,29 @@ https://example.org
 https://test.example.com
 ```
 
-Put **one URL per line**.
+Use **one URL per line**.
 
-The tool will automatically append:
+### Run GhostVector
 
-```text
-/.env
+```bash
+python ghostv.py -l urls.txt
 ```
 
-to each target.
+Or:
 
-For example:
-
-```text
-https://example.com
+```bash
+python ghostv.py --list urls.txt
 ```
 
-becomes:
+### Show help
 
-```text
-https://example.com/.env
+```bash
+python ghostv.py -h
 ```
 
 ---
 
-## 🖥️ Example
-
-Run:
-
-```bash
-python script.py -l urls.txt
-```
-
-The tool may produce output such as:
+## 🖥️ Example Output
 
 ```text
 [VULNERABLE] -> 200 OK  https://example.com/.env
@@ -144,179 +140,138 @@ The tool may produce output such as:
 [NOT VULNERABLE] -> 404 https://example.org/.env
 
 [TIMEOUT] -> https://test.example.com/.env
+
+[NOT VULNERABLE] -> 403 https://test.example.net/.env
 ```
 
 ### Status Indicators
 
-| Output          | Meaning                                                   |
-| --------------- | --------------------------------------------------------- |
-| 🟢 `200 OK`     | The endpoint returned HTTP 200 and should be investigated |
-| 🔴 `404`        | The requested resource was not found                      |
-| 🔴 `403`        | Access to the resource was forbidden                      |
-| 🟡 `TIMEOUT`    | The request did not complete within the timeout           |
-| 🔴 Other status | The server returned another HTTP response                 |
+| Status | Result |
+|:---:|---|
+| 🟢 `200 OK` | Potential exposure — investigate further |
+| 🟡 `TIMEOUT` | Request exceeded the timeout limit |
+| 🔴 `403` | Access to the endpoint was forbidden |
+| 🔴 `404` | Endpoint was not found |
+| 🔴 Other | Server returned another HTTP status |
 
 ---
 
-## 🔬 How It Works
+## ⚠️ Important: 200 Does Not Mean Confirmed Exposure
 
-The tool follows a simple workflow:
+A `200 OK` response **does not automatically confirm that a `.env` file is exposed**.
 
-```text
-             URL List
-                │
-                ▼
-        Read each URL
-                │
-                ▼
-         Append /.env
-                │
-                ▼
-       Send HTTP Request
-                │
-                ▼
-        Get Status Code
-                │
-       ┌────────┼────────┐
-       ▼        ▼        ▼
-      200    Timeout   Other
-       │        │        │
-       ▼        ▼        ▼
-   Potential  Timeout  Not 200
-   Exposure
-```
+Some applications return `200` for:
 
-For example:
+- Custom error pages
+- Login pages
+- SPA fallback pages
+- Catch-all routes
+- Reverse-proxy responses
+- Generic application pages
+
+Therefore, GhostVector's `200 OK` result should be considered a **potential finding**, not a confirmed vulnerability.
+
+### 🔬 Always verify
+
+If a target returns:
 
 ```text
-https://example.com
-        │
-        ▼
-https://example.com/.env
-        │
-        ▼
-     HTTP 200
-        │
-        ▼
-Potentially exposed
+200 OK
 ```
+
+manually inspect the response and confirm that the returned content is actually an exposed `.env` file.
 
 ---
 
-## ⚠️ Important: `200 OK` ≠ Confirmed `.env` Exposure
+## 💡 Why Check `.env`?
 
-A `200 OK` response **does not automatically mean that an actual `.env` file has been exposed**.
+Environment files can contain sensitive application configuration such as:
 
-Some applications return `200 OK` for:
+```text
+DATABASE_URL=...
+API_KEY=...
+SECRET_KEY=...
+DB_PASSWORD=...
+```
 
-* Custom error pages
-* Login pages
-* SPA fallback pages
-* Generic application responses
-* Reverse-proxy responses
-* Catch-all routes
+If these values are publicly accessible, they could potentially expose:
 
-Therefore, a `200` result should be **manually verified** before reporting it as a confirmed vulnerability.
+- 🔑 Application secrets
+- 🗄️ Database credentials
+- 🔐 API keys
+- ⚙️ Internal configuration
+- 🛠️ Service credentials
 
-A confirmed exposure should be based on the response actually containing `.env`-style configuration data, rather than the status code alone.
+The severity depends on the information contained within the exposed file.
 
 ---
 
 ## 📁 Project Structure
 
 ```text
-testENV/
+GhostVector/
 │
-├── script.py
-├── requirements.txt
-├── urls.txt
-├── README.md
-└── .gitignore
+├── 👻 ghostv.py
+├── 📦 requirements.txt
+└── 📖 README.md
 ```
 
-### `script.py`
+### `ghostv.py`
 
-Main Python script responsible for reading targets and checking `/.env`.
+The main GhostVector script.
 
 ### `requirements.txt`
 
 Contains the Python dependencies required by the project.
 
-### `urls.txt`
+### `README.md`
 
-Example input file containing URLs to test.
-
-> Avoid committing real targets or sensitive information to a public repository.
-
-### `.gitignore`
-
-Prevents files such as local `.env` files, Python cache files, and virtual environments from being committed.
+Project documentation and usage guide.
 
 ---
 
-## 🛠️ Command Reference
+## 🧠 Built With
 
-### Show help
-
-```bash
-python script.py -h
-```
-
-### Provide a URL list
-
-```bash
-python script.py -l urls.txt
-```
-
-### Long-form option
-
-```bash
-python script.py --list urls.txt
-```
+| Technology | Purpose |
+|---|---|
+| 🐍 Python | Core programming language |
+| 🌐 Requests | HTTP requests |
+| ⚙️ Argparse | Command-line arguments |
 
 ---
 
-## 🧪 Example Test Flow
+## 🛡️ Responsible Use
 
-```bash
-# Clone
-git clone https://github.com/utdude/testENV.git
+GhostVector is designed for **authorized security testing and research**.
 
-# Enter directory
-cd testENV
+Use it only against:
 
-# Install dependencies
-pip install -r requirements.txt
+- 🏠 Applications you own
+- 🐛 Authorized bug-bounty targets
+- 🔐 Penetration-testing targets
+- 🧪 CTFs and security labs
+- 📚 Systems where you have explicit permission to test
 
-# Create your target list
-nano urls.txt
+**Never scan or test systems without authorization.**
 
-# Run
-python script.py -l urls.txt
-```
+Always verify that your target is within the permitted scope of the security program or engagement.
 
 ---
 
-## ⚠️ Responsible Use
+## 📜 Disclaimer
 
-This project is intended for **authorized security research and testing**.
+GhostVector is provided for **educational and authorized security-testing purposes**.
 
-Appropriate uses include:
-
-* 🛡️ Testing your own applications
-* 🐛 Authorized bug bounty programs
-* 🔐 Penetration testing with permission
-* 🧪 Local security labs
-* 📚 Security research and learning
-
-**Do not scan websites, servers, or infrastructure without authorization.**
-
-Always verify that your testing is permitted and within the target's defined scope.
+The author is not responsible for misuse of this tool or any damage resulting from unauthorized testing.
 
 ---
 
-## 📜 License
+<div align="center">
 
-This project is provided for educational and authorized security-testing purposes.
+## 👻 GhostVector
 
-Use it responsibly.
+### Hunt the hidden. Map the vector.
+
+**Built for security research.**
+
+</div>
