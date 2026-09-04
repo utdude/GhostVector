@@ -1,10 +1,13 @@
 # 👻 GhostVector
 
-### Hunt the hidden. Map the vector.
+> **Hunt the hidden, Map the vector.**
 
-A lightweight Python tool for detecting potentially exposed `.env` files on web applications.
+GhostVector is a lightweight Python security tool for checking whether potentially sensitive files are publicly accessible on web servers.
 
-GhostVector takes a list of URLs, automatically checks their `/.env` endpoint, analyzes the HTTP response, and highlights targets that return `200 OK`.
+It currently supports two scanning modes:
+
+- 🎯 **Normal scan** — checks for `/.env`
+- 🔥 **Full scan** — checks a list of commonly sensitive/restricted files
 
 > ⚠️ **For authorized security testing only.**
 
@@ -12,59 +15,186 @@ GhostVector takes a list of URLs, automatically checks their `/.env` endpoint, a
 
 ## ✨ Features
 
-- 📄 Check multiple URLs from a file
-- 🔗 Automatically append `/.env`
-- 🌐 Supports HTTP/HTTPS targets
-- ⚡ Fast HTTP requests using Python `requests`
+- 📄 Scan multiple URLs from a file
+- 🎯 `.env` scanning
+- 🔥 Full scan mode
+- 🔍 Checks multiple sensitive file paths
+- 🌐 Supports HTTP and HTTPS URLs
+- ⚡ HTTP requests using Python `requests`
 - 📊 HTTP status code detection
 - 🟢 Highlights `200 OK` responses
 - 🟡 Detects request timeouts
 - 🔴 Displays other HTTP status codes
-- 🛡️ Handles file-related errors
-- 💻 Simple CLI interface
+- 🛡️ Handles file errors and request errors
+- ⌨️ Supports `Ctrl+C` to stop a scan
+- 💻 Simple command-line interface using `argparse`
+
+---
+
+## 🎯 Scanning Modes
+
+GhostV currently has two scanning modes.
+
+### Normal Scan
+
+The default mode checks each URL for:
+
+```text
+/.env
+```
+
+Example:
+
+```bash
+python ghostV.py -l urls.txt
+```
+
+### Full Scan
+
+The `-f` / `--full` option checks each URL against a list of sensitive files.
+
+Example:
+
+```bash
+python ghostV.py -l urls.txt -f
+```
+
+The full scan can take longer because each URL is tested against multiple files.
 
 ---
 
 ## 🔎 How It Works
 
-GhostVector keeps the initial check simple:
+### Normal `.env` Scan
 
 ```text
-                 URL List
-                    │
-                    ▼
-               Read URL
-                    │
-                    ▼
-              Append /.env
-                    │
-                    ▼
-            Send HTTP Request
-                    │
-                    ▼
-             Check Status Code
-                    │
-          ┌─────────┼─────────┐
-          ▼         ▼         ▼
-         200      Timeout    Other
-          │         │         │
-          ▼         ▼         ▼
-      Potential   Request    Not 200
-      Exposure    Timeout
+URL List
+   │
+   ▼
+Read URL
+   │
+   ▼
+Add /.env
+   │
+   ▼
+Send HTTP Request
+   │
+   ▼
+Check Status Code
+   │
+   ├── 200 ──► Potential Finding
+   ├── Timeout
+   └── Other Status
 ```
 
-### Example
-
-Input:
+### 🔥 Full Scan
 
 ```text
-https://example.com
+URL List
+   │
+   ▼
+Read URL
+   │
+   ▼
+Load Sensitive File List
+   │
+   ▼
+Check Each File
+   │
+   ▼
+Send HTTP Request
+   │
+   ▼
+Check Status Code
+   │
+   ├── 200 ──► Potential Finding
+   ├── Timeout
+   └── Other Status
 ```
 
-GhostVector checks:
+---
+
+## 📂 Sensitive Files
+
+The full scan currently checks files such as:
 
 ```text
-https://example.com/.env
+.env
+.env.local
+.env.production
+.env.development
+.env.staging
+.env.backup
+.env.old
+.env.bak
+
+.git/config
+.git/HEAD
+.git/index
+
+.htaccess
+.htpasswd
+
+web.config
+
+config.php
+configuration.php
+settings.py
+config.py
+
+database.yml
+database.yaml
+
+docker-compose.yml
+docker-compose.yaml
+Dockerfile
+
+package.json
+package-lock.json
+yarn.lock
+
+composer.json
+composer.lock
+requirements.txt
+
+wp-config.php
+
+database.sql
+dump.sql
+backup.sql
+db.sql
+database.db
+database.sqlite
+database.sqlite3
+
+backup.zip
+backup.tar
+backup.tar.gz
+site.zip
+www.zip
+
+credentials.json
+secrets.json
+service-account.json
+firebase-adminsdk.json
+
+id_rsa
+id_rsa.pub
+.pem
+.key
+.p12
+.pfx
+
+phpinfo.php
+info.php
+debug.log
+error.log
+access.log
+
+.env.example
+.gitignore
+.editorconfig
+tsconfig.json
 ```
 
 ---
@@ -74,7 +204,7 @@ https://example.com/.env
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/utkarshrai369/GhostVector.git
+git clone https://github.com/utdude/GhostVector.git
 ```
 
 ### 2. Enter the directory
@@ -92,17 +222,23 @@ pip install -r requirements.txt
 ### Requirements
 
 - 🐍 Python 3.x
-- 📦 `requests`
+- 📦 Requests
 
 ---
 
 ## 🎯 Usage
 
-GhostVector accepts a file containing URLs using the `-l` / `--list` option.
+GhostV requires a URL list using the `-l` / `--list` option.
 
-### Create your URL list
+### Create a URL list
 
-Create a file such as `urls.txt`:
+Create a file such as:
+
+```text
+urls.txt
+```
+
+Add one URL per line:
 
 ```text
 https://example.com
@@ -110,29 +246,51 @@ https://example.org
 https://test.example.com
 ```
 
-Use **one URL per line**.
+---
 
-### Run GhostVector
+### 🎯 Normal Scan
+
+Check for exposed `.env` files:
 
 ```bash
-python ghostv.py -l urls.txt
+python ghostV.py -l urls.txt
 ```
 
 Or:
 
 ```bash
-python ghostv.py --list urls.txt
-```
-
-### Show help
-
-```bash
-python ghostv.py -h
+python ghostV.py --list urls.txt
 ```
 
 ---
 
-## 🖥️ Example Output
+### 🔥 Full Scan
+
+Check for multiple sensitive files:
+
+```bash
+python ghostV.py -l urls.txt -f
+```
+
+Or:
+
+```bash
+python ghostV.py --list urls.txt --full
+```
+
+---
+
+### ❓ Show Help
+
+```bash
+python ghostV.py -h
+```
+
+---
+
+## 🖥️ Output
+
+### Normal Scan
 
 ```text
 [VULNERABLE] -> 200 OK  https://example.com/.env
@@ -140,52 +298,57 @@ python ghostv.py -h
 [NOT VULNERABLE] -> 404 https://example.org/.env
 
 [TIMEOUT] -> https://test.example.com/.env
-
-[NOT VULNERABLE] -> 403 https://test.example.net/.env
 ```
 
-### Status Indicators
+### Full Scan
 
-| Status | Result |
-|:---:|---|
-| 🟢 `200 OK` | Potential exposure — investigate further |
-| 🟡 `TIMEOUT` | Request exceeded the timeout limit |
-| 🔴 `403` | Access to the endpoint was forbidden |
-| 🔴 `404` | Endpoint was not found |
-| 🔴 Other | Server returned another HTTP status |
+```text
+[SCANNING] -> https://example.com
+
+[VULNERABLE] /.env -> 200 OK  https://example.com/.env
+
+[NOT VULNERABLE] /config.php -> 404 https://example.com/config.php
+
+[TIMEOUT] /backup.zip -> https://example.com/backup.zip
+```
 
 ---
 
-## ⚠️ Important: 200 Does Not Mean Confirmed Exposure
+## 📊 Status Indicators
 
-A `200 OK` response **does not automatically confirm that a `.env` file is exposed**.
+| Indicator | Meaning |
+|---|---|
+| 🟢 `VULNERABLE` | Server returned `200 OK` for the requested file |
+| 🟡 `TIMEOUT` | Request exceeded the 5-second timeout |
+| 🔴 `NOT VULNERABLE` | Server returned a status other than `200` |
+| 🔵 `SCANNING` | Target is currently being scanned |
 
-Some applications return `200` for:
+> **Important:** A `200 OK` response does **not automatically confirm a vulnerability**.
+
+---
+
+## ⚠️ Important: `200 OK` ≠ Confirmed Exposure
+
+GhostV uses the HTTP status code to identify potentially accessible files.
+
+A `200 OK` response means that the server successfully returned a response, but it does **not necessarily mean that the requested sensitive file exists or contains sensitive information**.
+
+Possible false positives include:
 
 - Custom error pages
 - Login pages
 - SPA fallback pages
 - Catch-all routes
-- Reverse-proxy responses
-- Generic application pages
+- Reverse proxy responses
+- Generic application responses
 
-Therefore, GhostVector's `200 OK` result should be considered a **potential finding**, not a confirmed vulnerability.
-
-### 🔬 Always verify
-
-If a target returns:
-
-```text
-200 OK
-```
-
-manually inspect the response and confirm that the returned content is actually an exposed `.env` file.
+Always manually verify potential findings.
 
 ---
 
-## 💡 Why Check `.env`?
+## 💡 Why Sensitive Files Matter
 
-Environment files can contain sensitive application configuration such as:
+Some configuration and backup files can contain sensitive information such as:
 
 ```text
 DATABASE_URL=...
@@ -194,15 +357,16 @@ SECRET_KEY=...
 DB_PASSWORD=...
 ```
 
-If these values are publicly accessible, they could potentially expose:
+Depending on the file, exposure could reveal:
 
-- 🔑 Application secrets
+- 🔑 API keys
 - 🗄️ Database credentials
-- 🔐 API keys
+- 🔐 Application secrets
 - ⚙️ Internal configuration
 - 🛠️ Service credentials
+- 📦 Application information
 
-The severity depends on the information contained within the exposed file.
+The actual impact depends on the contents of the exposed file.
 
 ---
 
@@ -211,22 +375,22 @@ The severity depends on the information contained within the exposed file.
 ```text
 GhostVector/
 │
-├── 👻 ghostv.py
+├── 👻 ghostV.py
 ├── 📦 requirements.txt
 └── 📖 README.md
 ```
 
-### `ghostv.py`
+### `ghostV.py`
 
-The main GhostVector script.
+Main GhostV scanner containing the `.env` and full scanning functionality.
 
 ### `requirements.txt`
 
-Contains the Python dependencies required by the project.
+Contains the Python dependencies required by GhostV.
 
 ### `README.md`
 
-Project documentation and usage guide.
+Project documentation and usage instructions.
 
 ---
 
@@ -242,25 +406,23 @@ Project documentation and usage guide.
 
 ## 🛡️ Responsible Use
 
-GhostVector is designed for **authorized security testing and research**.
+GhostVector is intended for **authorized security testing and educational purposes**.
 
-Use it only against:
+Use GhostV only against systems where you have permission to perform security testing, such as:
 
 - 🏠 Applications you own
 - 🐛 Authorized bug-bounty targets
-- 🔐 Penetration-testing targets
+- 🔐 Authorized penetration-testing targets
 - 🧪 CTFs and security labs
-- 📚 Systems where you have explicit permission to test
+- 📚 Your own test environments
 
-**Never scan or test systems without authorization.**
-
-Always verify that your target is within the permitted scope of the security program or engagement.
+Do not scan systems without authorization.
 
 ---
 
 ## 📜 Disclaimer
 
-GhostVector is provided for **educational and authorized security-testing purposes**.
+GhostVector is provided for educational and authorized security-testing purposes.
 
 The author is not responsible for misuse of this tool or any damage resulting from unauthorized testing.
 
@@ -268,10 +430,10 @@ The author is not responsible for misuse of this tool or any damage resulting fr
 
 <div align="center">
 
-## 👻 GhostVector
+### 👻 GhostVector
 
-### Hunt the hidden. Map the vector.
+**Hunt the hidden, Map the vector.**
 
-**Built for security research.**
+Created by **Utkarsh Rai**
 
 </div>
