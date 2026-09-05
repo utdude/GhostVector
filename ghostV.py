@@ -4,18 +4,21 @@ import sys
 import os
 import re
 
-red_art = "\033[38;2;255;0;0m" + r"""
-      o__ __o       o                                   o       o              o
-     /v     v\     <|>                                 <|>     <|>            <|>
-    />       <\    / >                                 < >     < >            < >
-  o/               \o__ __o      o__ __o        __o__   |       \o            o/
- <|       _\__o__   |     v\    /v     v\      />  \    o__/_    v\          /v
-  \\          |    / \     <\  />       <\     \o       |         <\        />
-    \         /    \o/     o/  \         /      v\      |           \o    o/
-     o       o      |     <|    o       o        <\     o            v\  /v
-     <\__ __/>     / \    / \   <\__ __/>   _\o__</     <\__          <\/>
-""" + "\033[0m"
 
+ghostu_art = r"""
+     ██████╗ ██╗  ██╗ ██████╗ ███████╗████████╗██╗   ██╗
+    ██╔════╝ ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝██║   ██║
+    ██║  ███╗███████║██║   ██║███████╗   ██║   ██║   ██║
+    ██║   ██║██╔══██║██║   ██║╚════██║   ██║   ██║   ██║
+    ╚██████╔╝██║  ██║╚██████╔╝███████║   ██║  ╚██████╔╝
+     ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝    ╚═════╝
+
+                         👻 GhostV
+              ─────────────────────────────
+                 Hunt the hidden, Map the vector.
+                 Created by: Utkarsh Rai
+              ─────────────────────────────
+"""
 
 SENSITIVE_FILES = [
     ".env", ".env.local", ".env.production", ".env.development", ".env.staging",
@@ -44,6 +47,7 @@ class GhostV:
         self.timeout = timeout
         self.headers = {"Cookie": cookie} if cookie else {}
 
+    # ---------- helpers ----------
 
     def normalize_base(self, target):
         """Make sure target has a scheme and no trailing slash."""
@@ -79,6 +83,7 @@ class GhostV:
         else:
             print(f"\033[31m[NOT VULNERABLE] {label} ->  {status} {url}\033[0m")
 
+    # ---------- scan modes ----------
 
     def scan_base(self, base):
         """Run every sensitive-file check against a single normalized base URL."""
@@ -148,7 +153,7 @@ def option():
 
 
 if __name__ == "__main__":
-    print(red_art)
+    print(ghostu_art)
     try:
         option()
     except KeyboardInterrupt:
