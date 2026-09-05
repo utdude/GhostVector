@@ -4,10 +4,7 @@
 
 GhostVector is a lightweight Python security tool for checking whether potentially sensitive files are publicly accessible on web servers.
 
-It currently supports two scanning modes:
-
-- 🎯 **Normal scan** — checks for `/.env`
-- 🔥 **Full scan** — checks a list of commonly sensitive/restricted files
+It supports scanning a single domain or a list of URLs and can check for `/.env` or a broader list of commonly sensitive files.
 
 > ⚠️ **For authorized security testing only.**
 
@@ -15,25 +12,27 @@ It currently supports two scanning modes:
 
 ## ✨ Features
 
-- 📄 Scan multiple URLs from a file
-- 🎯 `.env` scanning
-- 🔥 Full scan mode
-- 🔍 Checks multiple sensitive file paths
-- 🌐 Supports HTTP and HTTPS URLs
-- ⚡ HTTP requests using Python `requests`
-- 📊 HTTP status code detection
-- 🟢 Highlights `200 OK` responses
-- 🟡 Detects request timeouts
-- 🔴 Displays other HTTP status codes
-- 🛡️ Handles file errors and request errors
-- ⌨️ Supports `Ctrl+C` to stop a scan
-- 💻 Simple command-line interface using `argparse`
+* 🎯 Scan a single domain directly with `-d`
+* 📄 Scan multiple URLs from a file with `-l`
+* 🔗 Automatically check `/.env`
+* 🔥 Full scan mode for commonly sensitive files
+* 🔍 Checks multiple sensitive file paths
+* 🍪 Send an authorized custom cookie header with `-c`
+* 🌐 Supports HTTP and HTTPS URLs
+* ⚡ HTTP requests using Python `requests`
+* 📊 HTTP status code detection
+* 🟢 Highlights `200 OK` responses
+* 🟡 Detects request timeouts
+* 🔴 Displays other HTTP status codes
+* 🛡️ Handles file and request errors
+* ⌨️ Supports `Ctrl+C` to stop a scan
+* 💻 Simple command-line interface using `argparse`
 
 ---
 
 ## 🎯 Scanning Modes
 
-GhostV currently has two scanning modes.
+GhostVector currently has two scanning modes.
 
 ### Normal Scan
 
@@ -51,7 +50,7 @@ python ghostV.py -l urls.txt
 
 ### Full Scan
 
-The `-f` / `--full` option checks each URL against a list of sensitive files.
+The `-f` / `--full` option checks each URL against a list of commonly sensitive files.
 
 Example:
 
@@ -221,16 +220,35 @@ pip install -r requirements.txt
 
 ### Requirements
 
-- 🐍 Python 3.x
-- 📦 Requests
+* 🐍 Python 3.x
+* 📦 Requests
 
 ---
 
 ## 🎯 Usage
 
-GhostV requires a URL list using the `-l` / `--list` option.
+```text
+usage: ghostV.py [-h] [-l LIST] [-d DOMAIN] [-c COOKIE] [-f]
 
-### Create a URL list
+options:
+  -h, --help            show this help message and exit
+  -l LIST, --list LIST  File containing target URLs (one per line)
+  -d DOMAIN, --domain DOMAIN
+                        Single domain target, e.g. target.com (no http/https)
+  -c COOKIE, --cookie COOKIE
+                        Send requests with a cookie header
+  -f, --full            Full scan for all known sensitive files (default: .env only)
+```
+
+### 🔹 Scan a single domain
+
+No need to create a file for one-off checks:
+
+```bash
+python ghostV.py -d example.com
+```
+
+### 🔹 Scan a list of URLs
 
 Create a file such as:
 
@@ -246,11 +264,7 @@ https://example.org
 https://test.example.com
 ```
 
----
-
-### 🎯 Normal Scan
-
-Check for exposed `.env` files:
+Run:
 
 ```bash
 python ghostV.py -l urls.txt
@@ -262,23 +276,35 @@ Or:
 python ghostV.py --list urls.txt
 ```
 
----
+### 🔥 Full sensitive-file scan
 
-### 🔥 Full Scan
-
-Check for multiple sensitive files:
+By default GhostVector checks `/.env`. Use `-f` / `--full` to check the broader sensitive-file list:
 
 ```bash
-python ghostV.py -l urls.txt -f
+python ghostV.py -d example.com -f
 ```
 
 Or:
 
 ```bash
-python ghostV.py --list urls.txt --full
+python ghostV.py -l urls.txt -f
 ```
 
----
+### 🔹 Sending an authorized cookie
+
+If you have an authorized session cookie for a target, you can provide it with `-c` / `--cookie`:
+
+```bash
+python ghostV.py -d example.com -c "session=yyyy"
+```
+
+This can also be combined with list and full-scan modes:
+
+```bash
+python ghostV.py -l urls.txt -f -c "session=yyyy"
+```
+
+> 🔐 Only use cookies from sessions you are authorized to test with. Never reuse cookies from third parties or sessions you do not own or control.
 
 ### ❓ Show Help
 
@@ -293,11 +319,15 @@ python ghostV.py -h
 ### Normal Scan
 
 ```text
-[VULNERABLE] -> 200 OK  https://example.com/.env
+[SCANNING] -> https://example.com
 
-[NOT VULNERABLE] -> 404 https://example.org/.env
+[VULNERABLE] /.env -> 200 OK https://example.com/.env
 
-[TIMEOUT] -> https://test.example.com/.env
+[NOT VULNERABLE] /.env -> 404 https://example.org/.env
+
+[TIMEOUT] /.env -> https://test.example.com/.env
+
+[NOT VULNERABLE] /.env -> 403 https://test.example.net/.env
 ```
 
 ### Full Scan
@@ -305,7 +335,7 @@ python ghostV.py -h
 ```text
 [SCANNING] -> https://example.com
 
-[VULNERABLE] /.env -> 200 OK  https://example.com/.env
+[VULNERABLE] /.env -> 200 OK https://example.com/.env
 
 [NOT VULNERABLE] /config.php -> 404 https://example.com/config.php
 
@@ -316,12 +346,12 @@ python ghostV.py -h
 
 ## 📊 Status Indicators
 
-| Indicator | Meaning |
-|---|---|
-| 🟢 `VULNERABLE` | Server returned `200 OK` for the requested file |
-| 🟡 `TIMEOUT` | Request exceeded the 5-second timeout |
-| 🔴 `NOT VULNERABLE` | Server returned a status other than `200` |
-| 🔵 `SCANNING` | Target is currently being scanned |
+| Indicator           | Meaning                                         |
+| ------------------- | ----------------------------------------------- |
+| 🟢 `VULNERABLE`     | Server returned `200 OK` for the requested file |
+| 🟡 `TIMEOUT`        | Request exceeded the 5-second timeout           |
+| 🔴 `NOT VULNERABLE` | Server returned a status other than `200`       |
+| 🔵 `SCANNING`       | Target is currently being scanned               |
 
 > **Important:** A `200 OK` response does **not automatically confirm a vulnerability**.
 
@@ -329,20 +359,20 @@ python ghostV.py -h
 
 ## ⚠️ Important: `200 OK` ≠ Confirmed Exposure
 
-GhostV uses the HTTP status code to identify potentially accessible files.
+GhostVector uses the HTTP status code to identify potentially accessible files.
 
 A `200 OK` response means that the server successfully returned a response, but it does **not necessarily mean that the requested sensitive file exists or contains sensitive information**.
 
 Possible false positives include:
 
-- Custom error pages
-- Login pages
-- SPA fallback pages
-- Catch-all routes
-- Reverse proxy responses
-- Generic application responses
+* Custom error pages
+* Login pages
+* SPA fallback pages
+* Catch-all routes
+* Reverse proxy responses
+* Generic application responses
 
-Always manually verify potential findings.
+Always manually inspect potential findings and confirm that the returned content is actually an exposed sensitive file.
 
 ---
 
@@ -359,12 +389,12 @@ DB_PASSWORD=...
 
 Depending on the file, exposure could reveal:
 
-- 🔑 API keys
-- 🗄️ Database credentials
-- 🔐 Application secrets
-- ⚙️ Internal configuration
-- 🛠️ Service credentials
-- 📦 Application information
+* 🔑 API keys
+* 🗄️ Database credentials
+* 🔐 Application secrets
+* ⚙️ Internal configuration
+* 🛠️ Service credentials
+* 📦 Application information
 
 The actual impact depends on the contents of the exposed file.
 
@@ -382,11 +412,16 @@ GhostVector/
 
 ### `ghostV.py`
 
-Main GhostV scanner containing the `.env` and full scanning functionality.
+The main GhostVector scanner. It supports:
+
+* `-d` / `--domain` — scan a single domain
+* `-l` / `--list` — scan a file of targets
+* `-f` / `--full` — check the full list of known sensitive files
+* `-c` / `--cookie` — attach an authorized cookie header to requests
 
 ### `requirements.txt`
 
-Contains the Python dependencies required by GhostV.
+Contains the Python dependencies required by GhostVector.
 
 ### `README.md`
 
@@ -396,11 +431,11 @@ Project documentation and usage instructions.
 
 ## 🧠 Built With
 
-| Technology | Purpose |
-|---|---|
-| 🐍 Python | Core programming language |
-| 🌐 Requests | HTTP requests |
-| ⚙️ Argparse | Command-line arguments |
+| Technology  | Purpose                   |
+| ----------- | ------------------------- |
+| 🐍 Python   | Core programming language |
+| 🌐 Requests | HTTP requests             |
+| ⚙️ Argparse | Command-line arguments    |
 
 ---
 
@@ -408,15 +443,18 @@ Project documentation and usage instructions.
 
 GhostVector is intended for **authorized security testing and educational purposes**.
 
-Use GhostV only against systems where you have permission to perform security testing, such as:
+Use GhostVector only against systems where you have permission to perform security testing, such as:
 
-- 🏠 Applications you own
-- 🐛 Authorized bug-bounty targets
-- 🔐 Authorized penetration-testing targets
-- 🧪 CTFs and security labs
-- 📚 Your own test environments
+* 🏠 Applications you own
+* 🐛 Authorized bug-bounty targets
+* 🔐 Authorized penetration-testing targets
+* 🧪 CTFs and security labs
+* 📚 Your own test environments
+* 📚 Systems where you have explicit permission to test
 
-Do not scan systems without authorization.
+**Never scan or test systems without authorization.**
+
+Only use `-c` / `--cookie` with credentials from sessions you are authorized to use.
 
 ---
 
