@@ -66,14 +66,19 @@ class GhostV:
         files_to_check = SENSITIVE_FILES if self.full else [".env"]
         return [(f, f"{base}/{f}") for f in files_to_check]
 
+    def build_non_persistant_urls(self, base):
+        """Return a non-persistant version of the URLs to check for a given base."""
+        return base+"/.ghostV-non-persistant-check"
+
     def check_url(self, url):
         try:
             res = requests.get(url, headers=self.headers, timeout=self.timeout)
-            return res.status_code
+            return res
         except requests.Timeout:
             return "TIMEOUT"
         except requests.RequestException:
             return "REQUEST ERROR"
+        
 
     def report(self, label, status, url):
         if status == 200:
@@ -88,9 +93,15 @@ class GhostV:
     def scan_base(self, base):
         """Run every sensitive-file check against a single normalized base URL."""
         print(f"\033[36m[SCANNING] ->  {base}\033[0m\n")
+        non_persistant_url = self.build_non_persistant_urls(base)
+        non_persistant_response = self.check_url(non_persistant_url)
         for fname, url in self.build_urls(base):
             status = self.check_url(url)
-            self.report(f"/{fname}", status, url)
+            if non_persistant_response.text == status.text:
+                self.report(f"/{fname}", 404, url)
+            else:
+                self.report(f"/{fname}", status.status_code, url)
+                     
 
     def domain_target(self, domain):
         """Entry point for -d / --domain: a single target string."""
